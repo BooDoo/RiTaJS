@@ -4483,9 +4483,9 @@
 					var post = prod.substring(idx + name.length);
 					
 					if (trimSpace) {
-						pre = pre.trim();
-						expanded = expanded.trim();
-						post = post.trim();
+						pre = (pre || "").trim();
+						expanded = (expanded || "").trim();
+						post = (post || "").trim();
 					}
 
 					if (dbug) log("  pre=" + pre+"  expanded=" + expanded+"  post=" + post+"  result=" + pre + expanded + post);
