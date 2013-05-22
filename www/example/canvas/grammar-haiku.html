@@ -17,12 +17,14 @@ haikuGrammar = {
 
 var grammar, rts = [];
 
+window.onload = function() {setup(); draw();};
+
 function setup()
 {
     RiText.size(650, 200);
 
     RiText.defaultFont("arial",30);  
-    RiText.prototype.textAlign(CENTER);
+    RiText.defaultAlignment(CENTER);
 
     rts[0] = new RiText("click to", RiText.width() / 2, 75);
     rts[1] = new RiText("generate", RiText.width() / 2, 110);
@@ -47,7 +49,5 @@ function mouseClicked()
     }
     draw();
 }
-
-setup(); draw();
 
 </script>

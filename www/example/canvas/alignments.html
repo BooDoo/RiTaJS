@@ -7,18 +7,18 @@
 
 RiTa.p5Compatible(true);
 
-size(400, 400);
+RiText.size(400, 400);
 
-RiText.showBoundingBoxes(true);
+RiText.showBoundingBox(true);
 RiText.defaultFont(createFont("Times", 64));
 
 RiText("Left",   200, 100).align(LEFT);
 RiText("Center", 200, 200).align(CENTER);
 RiText("Right",  200, 300).align(RIGHT);
 
-background(255);
+RiText.background(255);
 
-line(200,0,200,400);
+RiText.line(200,0,200,400);
     
 RiText.drawAll();
 
