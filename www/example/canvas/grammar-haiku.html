@@ -17,6 +17,8 @@ haikuGrammar = {
 
 var grammar, rts = [];
 
+window.onload = function() {setup(); draw();};
+
 function setup()
 {
     RiText.size(650, 200);
@@ -47,7 +49,5 @@ function mouseClicked()
     }
     draw();
 }
-
-setup(); draw();
 
 </script>
