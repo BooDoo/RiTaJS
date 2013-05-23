@@ -5227,7 +5227,7 @@
 	    
 		// remove line breaks & add spaces around html
 		txt = txt.replace(/[\r\n]/, SP);
-		txt = txt.replace(/ ?(<[^>]+>) ?/, " $1 "); 	
+		txt = txt.replace(/ ?(<[^>]+?>) ?/, " $1 ");
 
 		// split into reversed array of words
 		RiText._addToStack(txt, words);
@@ -5235,11 +5235,22 @@
 	 
 	 	//log("txt.len="+txt.length+" x="+x+" y="+y+" w="+w+" h="+h+" lead="+leading);log(pfont);
 	 	
-	    g._textFont(pfont); // for ascent & descent
-	    ascent = g.p.textAscent();
-	    descent = g.p.textDescent();
-	    currentY = y + ascent + 1;
-	
+	 		//Use processing if available
+	 		if (g.p) {
+		    g._textFont(pfont); // for ascent & descent
+		    ascent = pfont.textAscent();
+		    descent = pfont.textDescent();
+			}
+			//Use _getMetrics hack if Processing isn't present.
+			else {
+				g.ctx.save();
+				RiText.defaults.metrics = RiText.defaults.metrics || g._getMetrics();
+				g.ctx.restore();
+				ascent = RiText.defaults.metrics.ascent;
+				descent = RiText.defaults.metrics.descent;
+			}
+			currentY = y + ascent + 1;
+
 	    if (RiText.defaults.indentFirstParagraph) 
 	    	startX += RiText.defaults.paragraphIndent;
 	        
@@ -7957,7 +7968,7 @@
 			this._textFont(rt._font);
 			var w = this.ctx.measureText(rt.text()).width;
 			// this must be cached...
-			var metrics = this._getMetrics(rt);
+			var metrics = this.metrics || this._getMetrics(rt);
 			
 			//log('[CTX] ascent='+metrics.ascent+' descent='+metrics.descent+" h="+(metrics.ascent+metrics.descent));
 			//this.ctx.restore();
@@ -7983,6 +7994,17 @@
 		_getMetrics : function(rt) {  // hack for font metrics in the canvas
 			
 			// TODO: if (rt._metrics) return rt._metrics; // check cache (invalidate on any change of font or size or...)
+			if (!arguments.length) {
+				//No rt passed in? See if default metrics are stored, and return if so.
+				if (RiText.defaults.metrics) return RiText.defaults.metrics;
+
+				rt = RiText("AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz01234567890|/\\");
+				var defMetrics = true;
+			}
+			//TODO: Check for changes to rt's properties to see if cache is valid.
+			else if (rt._metrics) {
+				return rt._metrics;
+			}
 
 			var st = '<span style="font-size: '+rt._font.size+'; font-family: '+rt._font.name+'">'+rt.text()+'</span>';
 			var dt = '<div style="display: inline-block; width: 1px; height: 0px; vertical-align: bottom; "></div>';
@@ -8017,11 +8039,13 @@
 				document.body.removeChild(div);
 				div.removeChild(text);
 				div.removeChild(block);
-				// fragment.removeChild(div);
+				if (defMetrics) RiText.dispose(rt); //Remove our placeholder rt element if extant
+				//fragment.removeChild(div);
 			}
 
-			// TODO: rt._metrics = results; // add to cache
-			
+			// TODO: rt._metrics = result; // add to cache
+			// HACKY: No rt passed in? Save metrics in RiText defaults
+			defMetrics ? RiText.defaults.metrics = result : rt._metrics = result;
 			return result;
 		},
 
