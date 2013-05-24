@@ -48064,6 +48064,15 @@ _RiTa_LTS=[
 			
 			//console.log('p5Compatible('+value+'['+window+'])');
 			
+			if (!arguments.callee.setupAndDraw) {
+				
+				arguments.callee.setupAndDraw = function() {
+					if (typeof window.setup == F) setup();
+					if (typeof window.draw == F) RiText.loop();
+				};
+			}
+
+			
 			if (typeof window != 'undefined' && window) {
 				
 				// TODO: add mouse-handling methods here?
@@ -48094,15 +48103,23 @@ _RiTa_LTS=[
 	
 				// alias' for RiTa-java static functions  (?)
 				RiText.setDefaultFont = RiText.defaultFont; 
-				RiText.setDefaultColor = RiText.defaultColor;
+				RiText.setDefaultColor = RiText.defaultFill;
 				//RiText.setDefaultAlignment = RiText.defaultAlignment;
 				RiText.setCallbackTimer = RiText.timer;
 				
-				if (typeof window != 'undefined' && window && !hasProcessing) { // remove all this?
+				if (typeof window != 'undefined' && window && !hasProcessing) { 
 					
 					if (!window.LEFT) window.LEFT = RiTa.LEFT;
 					if (!window.RIGHT) window.RIGHT = RiTa.RIGHT;
-					if (!window.CENTER) window.CENTER = RiTa.CENTER;					
+					if (!window.CENTER) window.CENTER = RiTa.CENTER;	
+	
+					if (!window.line) window.line = RiText.line;
+					if (!window.size) window.size = RiText.size;
+					if (!window.createFont) window.createFont = RiText.createFont;
+					if (!window.background) window.background = RiText.background;
+					if (!window.random) window.random = RiText.random;	
+					
+					if (!window.onload) window.onload = arguments.callee.setupAndDraw;					
 				}
 			}
 			else { // non-compatible mode (clear extra stuff)
@@ -48126,9 +48143,15 @@ _RiTa_LTS=[
 					if (window.RIGHT === RiTa.RIGHT) delete window.RIGHT;
 					if (window.LEFT === RiTa.LEFT) delete window.LEFT;
 					if (window.CENTER === RiTa.CENTER) delete window.CENTER;
-
+					
+					if (window.line === RiTa.line) delete window.line;
+					if (window.size === RiTa.size) delete window.size;
+					if (window.random === RiTa.random) delete window.random;
+					if (window.background === RiTa.background) delete window.background;
+					if (window.createFont === RiTa.createFont) delete window.createFont;
+					
 					if (window.onload && (window.onload == arguments.callee.setupAndDraw))
-						window.onload = undefined; //?
+						window.onload = undefined; // ?
 				}
 			}
 		},
@@ -51210,9 +51233,9 @@ _RiTa_LTS=[
 					var post = prod.substring(idx + name.length);
 					
 					if (trimSpace) {
-						pre = pre.trim();
-						expanded = expanded.trim();
-						post = post.trim();
+						pre = (pre || E).trim();
+						post = (post || E).trim();
+						expanded = (expanded || E).trim();
 					}
 
 					if (dbug) log("  pre=" + pre+"  expanded=" + expanded+"  post=" + post+"  result=" + pre + expanded + post);
@@ -51408,7 +51431,7 @@ _RiTa_LTS=[
 			an = RiText._animator, 
 			callback = undef(window) ? null : window['draw'];
 		
-		if (g._type() === 'Processing') return; // let P5 do its own loop?
+		if (g._type() === 'Processing') return; // let P5 do its own loop
   
 		if (an.loopStarted) return;
 		
@@ -51505,7 +51528,7 @@ _RiTa_LTS=[
 	 * @param {number} y2
 	 * @param {number} lineWidth (optional: default=1)
 	 */ 
-	RiText.line = function(x1, y1, x2, y2, lineWidth) { // TODO: REMOVE
+	RiText.line = function(x1, y1, x2, y2, lineWidth) { 
 
 		var g = RiText.renderer;
 		g._pushState();
@@ -51798,8 +51821,8 @@ _RiTa_LTS=[
 	RiText.defaultBoundingBoxes = function(value) {
 		
 		if (arguments.length==1) 
-			RiText.defaults.boundingBoxVisible = value;
-		return RiText.defaults.boundingBoxVisible;
+			RiText.defaults.showBounds = value;
+		return RiText.defaults.showBounds;
 	}	 */
 
 	/**
@@ -51854,14 +51877,14 @@ _RiTa_LTS=[
 	}
 	
 	/**
-	 * Sets/gets the default color
+	 * Sets/gets the default fill color
 	 * @param {number | array} r takes 1-4 number values for rgba, or an array of size 1-4
 	 * @param {number} g (optional)
 	 * @param {number} b (optional)
 	 * @param {number} a (optional)
 	 * @returns {object} the current default color
 	 */
-	RiText.defaultColor = function(r, g, b, a) {
+	RiText.defaultFill = function(r, g, b, a) {
  
 		if (arguments.length) { 
 			RiText.defaults.color = parseColor.apply(this,arguments);
@@ -52334,7 +52357,7 @@ _RiTa_LTS=[
 		color : { r : 0, g : 0, b : 0, a : 255 }, fontFamily: 'Times New Roman',  
 		alignment : RiTa.LEFT, motionType : RiTa.LINEAR, font: null, fontSize: 14,
 		paragraphLeading : 0, paragraphIndent: 20, indentFirstParagraph : false,
-		boundingBoxStroke : null, boundingBoxVisible : false, leadingFactor: 1.2,
+		boundingStroke : null, boundingStrokeWeight : 1, showBounds : false, leadingFactor: 1.2,
 		rotateX:0, rotateY:0, rotateZ:0, scaleX:1, scaleY:1, scaleZ:1
 	}
 
@@ -52360,23 +52383,23 @@ _RiTa_LTS=[
 				a : RiText.defaults.color.a 
 			};
 			
-			var bbs = RiText.defaults.boundingBoxStroke;
-			this._boundingBoxStroke = { 
+			var bbs = RiText.defaults.boundingStroke;
+			this._boundingStroke = { 
 				r : (bbs && bbs.r) || this._color.r, 
 				g : (bbs && bbs.g) || this._color.g, 
 				b : (bbs && bbs.b) || this._color.b, 
 				a : (bbs && bbs.a) || this._color.a
 			};
 			
-			var bbf = RiText.defaults.boundingBoxFill;
-			this._boundingBoxFill = { 
+			/*var bbf = RiText.defaults.boundingFill;
+			this._boundingFill = { 
 				r : (bbf && bbf.r) || this._color.r, 
 				g : (bbf && bbf.g) || this._color.g, 
 				b : (bbf && bbf.b) || this._color.b, 
 				a : (bbf && bbf.a) || 0
-			};
+			};*/
 	
-			this._boundingBoxVisible = RiText.defaults.boundingBoxVisible;
+			this._showBounds = RiText.defaults.showBounds;
 			this._motionType = RiText.defaults.motionType;
 			this._alignment = RiText.defaults.alignment;
 	
@@ -52528,15 +52551,16 @@ _RiTa_LTS=[
 				
 		
 				// And the bounding box
-				if (this._boundingBoxVisible) {
+				if (this._showBounds) {
 					
-					//	console.log(this.text()+".bb="+this._boundingBoxVisible);
+					//	console.log(this.text()+".bb="+this._showBounds);
 					
-					g._fill(this._boundingBoxFill.r, this._boundingBoxFill.g, 
-						this._boundingBoxFill.b, this._boundingBoxFill.a);
+					//g._fill(this._boundingFill.r, this._boundingFill.g, 
+						//this._boundingFill.b, this._boundingFill.a);
+					g._fill(0, 0, 0, 0); // push/popStyle
 					
-					g._stroke(this._boundingBoxStroke.r, this._boundingBoxStroke.g, 
-							this._boundingBoxStroke.b, this._boundingBoxStroke.a);
+					g._stroke(this._boundingStroke.r, this._boundingStroke.g, 
+							this._boundingStroke.b, this._boundingStroke.a);
 
 					// shift bounds based on alignment  // TODO: check that rotation still works w bounds? 
 					switch(this._alignment) {
@@ -53571,17 +53595,17 @@ _RiTa_LTS=[
 		
 
 		/**
-		 * Set/gets the boundingbox visibility for this RiText
+		 * Set/gets the visibility of the bounding box for this RiText
 		 * 
 		 * @param {boolean} trueOrFalse (optional) true or false 
-		 * @returns {object | boolean}this RiText (set) or the current boolean value (get)
+		 * @returns {object | boolean} this RiText (set) or the current boolean value (get)
 		 */
-		showBoundingBox : function(trueOrFalse) {
+		showBounds : function(trueOrFalse) {
 		   if (arguments.length == 1) {
-			   this._boundingBoxVisible = trueOrFalse;
+			   this._showBounds = trueOrFalse;
 			   return this;
 		   }
-		   return this._boundingBoxVisible;
+		   return this._showBounds;
 		},
 
 		/**
